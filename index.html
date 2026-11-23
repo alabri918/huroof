@@ -244,45 +244,13 @@ h2{color:#fff;font-size:1.25rem}
 .tile small{color:#ffe7a6}
 .tile.used{opacity:.28;filter:grayscale(.6);transform:none;box-shadow:inset 0 0 0 3px var(--c)}
 .board.live .tile:not(.used):active{transform:scale(.95);box-shadow:none}
-.play .board{--gap:clamp(8px,1vw,14px);width:min(100%,calc((100dvh - 330px) * 2.05))}
-.pwrap .board{width:min(100%,calc((100dvh - 300px) * .98))}
+.play .board{--gap:clamp(8px,1vw,14px);width:min(100%,calc((100dvh - 290px) * 2.05))}
+.pwrap .board{width:min(100%,calc((100dvh - 280px) * .98))}
 
-/* question panel + gold turn bar */
-.qpanel{background:url(img/question-panel.webp) center/100% 100% no-repeat;padding:clamp(14px,2.4vh,30px) 5%;text-align:center}
-.qpanel .q,.qpanel .pq{color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.45);margin:0}
-.turnbar{position:relative;display:flex;align-items:center;justify-content:flex-start;gap:12px;margin:16px 0 18px;height:clamp(60px,8.5vh,86px);
-  background:url(img/gold-button.webp) center/100% 100% no-repeat;padding-inline:5% calc(clamp(74px,10.5vh,106px) + 3%)}
-.turnbar .who{color:var(--navyink);font-size:clamp(1.4rem,2.6vw,2.4rem);font-weight:800}
-.turnbar .who b{color:var(--navyink)}
-.turnbar .clock{position:absolute;left:-6px;top:50%;transform:translateY(-50%);width:clamp(74px,10.5vh,106px);height:clamp(74px,10.5vh,106px);
-  background:radial-gradient(#10225f,#050d2e);border:5px solid #f2c04a;box-shadow:0 0 0 3px #8a5d10,0 6px 16px rgba(0,0,0,.45);color:#fff;font-size:clamp(1.9rem,3.6vh,2.9rem)}
-body.hot .turnbar .clock{border-color:var(--red);color:#fff;animation:beat2 1s infinite}
-@keyframes beat2{50%{transform:translateY(-50%) scale(1.08)}}
-.turnbar .paused{color:var(--navyink)}
-
-/* host game screen: trophy, logo and player names on the right */
-.play{grid-template-columns:minmax(220px,290px) 1fr;align-items:stretch}
-.side2{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;text-align:center;padding-top:6px}
-.side2 .tro{height:clamp(80px,16vh,160px);filter:drop-shadow(0 0 24px rgba(255,200,80,.35))}
-.side2 .brand{font-size:clamp(3rem,5.5vw,5rem)}
-.side2 .divider{width:85%;height:2px;background:linear-gradient(90deg,transparent,#f2c04a,transparent);margin:4px 0}
-.side2 h2{margin:4px 0;font-size:clamp(1.3rem,2vw,1.8rem)}
-.names{display:flex;flex-direction:column;gap:6px;width:100%;align-items:center;flex:1;overflow:auto}
-.nmbtn{background:none;color:#fff;font-size:clamp(1.3rem,2.1vw,2rem);padding:.3em 1em;border-radius:22px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nmbtn.turn{background:url(img/gold-button.webp) center/100% 100% no-repeat;color:var(--navyink);min-width:85%}
-.nmbtn.out{opacity:.4;text-decoration:line-through}
-.nmbtn.off{color:#9aa6c8}
-.hostbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-.hostbar .ghost{font-size:.8rem;padding:.4em .8em}
-
-/* phone game screen */
-.pqp{margin:10px 0 2px;padding:12px 5%}
-.pqp .pq{font-size:clamp(1.4rem,6.5vw,2.1rem)}
-.pwrap .turnbar{height:60px;margin:12px 0 8px;padding-inline:5% 84px}
-.pwrap .turnbar .who{font-size:1.25rem}
-.pwrap .turnbar .clock{width:70px;height:70px;font-size:1.8rem}
-.pturn.mine{filter:drop-shadow(0 0 12px rgba(255,214,98,.7))}
-.pturn.mine .who{font-size:1.45rem;color:var(--navyink)}
+/* timer circle in the gold/navy colours */
+.clock{background:radial-gradient(#10225f,#050d2e);border:4px solid #f2c04a;box-shadow:0 0 0 2px #8a5d10,0 6px 16px rgba(0,0,0,.45);color:#fff}
+.who b{text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.q{color:var(--gold)}
 
 @media (max-width:900px){
   .lobby{grid-template-columns:1fr}
@@ -842,26 +810,24 @@ const LAYOUTS = {
       <button class="primary big" data-act="start" id="startBtn"></button>
     </section></div>`,
   play: () => `<div class="play">
-    <aside class="side2">
-      <img class="tro" src="img/trophy.webp" alt="">
-      <div class="brand">حروف</div>
-      <div class="divider"></div>
-      <h2>اللاعبون</h2>
-      <div class="names" id="plist"></div>
-      <div class="hostbar">
-        <button class="ghost" data-act="pause" id="pauseBtn"></button>
-        <button class="ghost" data-act="endround" id="endBtn"></button>
-        <button class="ghost" data-act="fs">ملء الشاشة</button>
-      </div>
-      <div class="row" style="flex-wrap:wrap;justify-content:center;gap:6px"><span class="pill" id="rnd"></span><span class="pill">الرمز <b id="code"></b></span></div>
-      <div class="net" id="net" style="margin:0"></div>
-    </aside>
     <main class="stage">
-      <div class="qpanel"><h1 class="q" id="q"></h1></div>
-      <div class="turnbar" id="turnbox"></div>
+      <div class="top"><span class="pill" id="rnd"></span><h1 class="q" id="q"></h1><span class="pill">الرمز <b id="code"></b></span></div>
+      <div class="turnbox" id="turnbox"></div>
+      <div class="tbar"><i id="tbar"></i></div>
       <div class="board host live" id="board"></div>
       <div class="last" id="last"></div>
-    </main></div>`,
+    </main>
+    <aside class="side card">
+      <h2>اللاعبون</h2>
+      <div class="plist" id="plist"></div>
+      ${ADDFORM}
+      <div class="controls">
+        <button class="ghost" data-act="pause" id="pauseBtn"></button>
+        <button class="ghost" data-act="endround" id="endBtn"></button>
+        <button class="ghost wide" data-act="fs">ملء الشاشة</button>
+      </div>
+      <div class="net" id="net"></div>
+    </aside></div>`,
   end: () => `<div class="endwrap">
     <section class="card winner" id="winner"></section>
     <section class="card"><h2>الترتيب</h2><div class="plist stand" id="stand"></div></section>
@@ -906,15 +872,13 @@ function renderHost(){
   if(view === "play"){
     const t = byId(S.turn);
     set("#rnd", S.match ? S.match.label : `الجولة ${S.round}`); set("#q", esc(S.question));
-    set("#turnbox", S.paused ? `<div class="who">اللعبة متوقفة</div><div class="clock"><span id="tnum"></span></div>`
-      : t ? `<div class="who">دور <b>${esc(t.name)}</b></div><div class="clock"><span id="tnum"></span></div>` : "");
+    set("#turnbox", S.paused ? `<span class="paused">اللعبة متوقفة</span><div class="clock"><span id="tnum"></span></div>`
+      : t ? `<div class="who" style="--c:${t.color}"><span class="dot"></span>الدور على <b>${esc(t.name)}</b></div><div class="clock"><span id="tnum"></span></div>` : "");
     setClock(remainingNow(), S.paused);
     $("#board").innerHTML = boardHTML(S.letters, {just:justLetter}); justLetter = null;
     const last = $("#last"); last.textContent = S.last ? S.last.txt : ""; last.className = "last" + (S.last && S.last.out ? " out" : "");
     // in a cup match only the two players are listed; spectators and the add-player form stay hidden
-    // names only, like the mockup; tapping a name opens the host's actions for that player
-    set("#plist", S.players.filter(p => inMatch(p.id)).map(p =>
-      `<button class="nmbtn${S.turn === p.id ? " turn" : ""}${!p.alive ? " out" : ""}${!p.local && !p.connected ? " off" : ""}" data-act="pmenu" data-id="${p.id}">${esc(p.name)}</button>`).join(""));
+    set("#plist", S.players.filter(p => inMatch(p.id)).map(p => plRow(p, true)).join(""));
     const af = $("#addForm"); if(af) af.style.display = S.match ? "none" : "";
     set("#pauseBtn", S.paused ? "استئناف" : "إيقاف مؤقت");
     set("#endBtn", S.match ? "إعادة المباراة" : "إنهاء الجولة");
@@ -1101,8 +1065,8 @@ function renderPlayer(){
   // play
   if(pLayout !== "play"){
     pLayout = "play"; lastSec = -1; lastPaint = "";
-    app.innerHTML = `<div id="connbar"></div><div class="pwrap"><div id="phead"></div><div class="qpanel pqp"><div class="pq" id="pq"></div></div><div id="pban"></div>
-      <div class="turnbar pturn" id="pturn"></div><div class="tbar"><i id="tbar"></i></div><div class="board" id="board"></div><div class="last" id="last"></div></div>`;
+    app.innerHTML = `<div id="connbar"></div><div class="pwrap"><div id="phead"></div><div class="pq" id="pq"></div><div id="pban"></div>
+      <div class="pturn" id="pturn"></div><div class="tbar"><i id="tbar"></i></div><div class="board" id="board"></div><div class="last" id="last"></div></div>`;
   }
   $("#connbar").innerHTML = connBar; $("#phead").innerHTML = head; $("#pq").textContent = s.question;
   const t = s.players.find(p => p.id === s.turn), mine = s.turn === P.pid && !s.paused;
@@ -1110,10 +1074,10 @@ function renderPlayer(){
   const ban = spectator ? `<div class="banner watch row" style="justify-content:space-between"><span>${esc(s.match.label)}: ${esc(nmOf(s.match.a))} ضد ${esc(nmOf(s.match.b))}</span><button class="ghost" data-act="unwatch">خروج</button></div>`
     : me.alive ? "" : `<div class="banner">طلعت من هذي الجولة، تابع اللعب لين الجولة الجاية</div>`;
   if($("#pban").innerHTML !== ban) $("#pban").innerHTML = ban;
-  const pt = $("#pturn"); pt.className = "turnbar pturn" + (mine ? " mine" : "");
-  pt.innerHTML = s.paused ? `<div class="who">اللعبة متوقفة</div><div class="clock"><span id="tnum"></span></div>`
+  const pt = $("#pturn"); pt.className = "pturn" + (mine ? " mine" : "");
+  pt.innerHTML = s.paused ? `<span class="paused">اللعبة متوقفة</span><div class="clock"><span id="tnum"></span></div>`
     : mine ? `<div class="who">دورك! اختر الحرف</div><div class="clock"><span id="tnum"></span></div>`
-    : t ? `<div class="who">دور <b>${esc(t.name)}</b></div><div class="clock"><span id="tnum"></span></div>` : "";
+    : t ? `<div class="who" style="--c:${t.color}"><span class="dot"></span>الدور على <b>${esc(t.name)}</b></div><div class="clock"><span id="tnum"></span></div>` : "";
   setClock(s.remaining, s.paused);
   const live = mine && me.alive && !P.pending;
   const b = $("#board"); b.className = "board " + (live ? "live" : "idle");
