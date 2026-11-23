@@ -421,7 +421,10 @@ function freshState(){ return {phase:"lobby", mode:"free", cup:null, match:null,
 const byId = id => S.players.find(p => p.id === id);
 const remainingNow = () => S.paused ? S.remaining : Math.max(0, deadline - Date.now());
 const newCode = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), b => "ABCDEFGHJKLMNPQRSTUVWXYZ"[b % 24]).join("");
-const joinUrl = () => location.href.split("#")[0] + "#" + code;
+// phones must always get the public address: a host opened from the local file or localhost would otherwise
+// put an address in the QR code that no phone can reach
+const PUBLIC_URL = "https://alabri918.github.io/huroof/";
+const joinUrl = () => (location.protocol === "https:" ? location.href.split("#")[0] : PUBLIC_URL) + "#" + code;
 
 function randomQ(){
   let pool = QUESTIONS.filter(q => !usedQ.has(q) && q !== S.question);
