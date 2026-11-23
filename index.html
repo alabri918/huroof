@@ -673,12 +673,12 @@ async function hostAct(act, el){
         const u = S.letters[l];
         if(await ask(`ترجع حرف ${l}؟ (تنشال نقطته من ${u.name})`, "رجّعه") && S.letters[l]){
           delete S.letters[l]; const o = byId(u.id); if(o) o.score = Math.max(0, o.score - 1);
-          S.last = {txt:`الهوست رجّع حرف ${l}`}; changed();
+          S.last = {txt:`رجع حرف ${l}`}; changed();
         }
       } else if(S.turn && !S.paused) pick(S.turn, l);
       break;
     }
-    case "kick": if(p && S.phase === "play" && p.alive) knockOut(p, `الهوست أقصى ${p.name} من الجولة`); break;
+    case "kick": if(p && S.phase === "play" && p.alive) knockOut(p, `${p.name} طلع من الجولة`); break;
     case "revive": if(p && S.phase === "play" && !p.alive && inMatch(p.id)){ p.alive = true; S.last = {txt:`${p.name} رجع للجولة`}; changed(); } break;
     case "remove": {
       if(!p || !await ask(`تحذف ${p.name} من اللعبة؟${S.cup && S.mode === "cup" && S.cup.names[p.id] ? " (خصمه يتأهل)" : ""}`, "احذف")) return;
@@ -937,9 +937,9 @@ function renderPlayer(){
       <button class="primary big">دخول</button></form></div>`;
     return;
   }
-  if(v === "kicked"){ pLayout = v; pScreen.innerHTML = `<div class="center"><div class="brand">حروف</div><div class="card"><p>الهوست أخرجك من اللعبة.</p><button class="ghost" onclick="location.reload()">ادخل من جديد</button></div></div>`; return; }
+  if(v === "kicked"){ pLayout = v; pScreen.innerHTML = `<div class="center"><div class="brand">حروف</div><div class="card"><p>تم إخراجك من اللعبة.</p><button class="ghost" onclick="location.reload()">ادخل من جديد</button></div></div>`; return; }
   if(v === "error"){ pLayout = v; pScreen.innerHTML = `<div class="center"><div class="card"><p>${esc(P.err)}</p><button class="primary" onclick="location.reload()">حاول مرة ثانية</button></div></div>`; return; }
-  const connBar = !P.connected ? `<div class="conn">${P.hostMissing ? "ما لقينا الغرفة، تأكد إن الهوست فاتح اللعبة… نحاول مرة ثانية" : "جاري الاتصال بالهوست…"}</div>` : "";
+  const connBar = !P.connected ? `<div class="conn">${P.hostMissing ? "ما لقينا الغرفة، تأكد إن الغرفة مفتوحة… نحاول مرة ثانية" : "جاري الاتصال بالغرفة…"}</div>` : "";
   if(!s || !me){
     pLayout = "wait";
     pScreen.innerHTML = `${connBar}<div class="center"><div class="brand">حروف</div><div class="card"><p>جاري الدخول للغرفة <b>${esc(P.code)}</b>…</p></div></div>`;
@@ -949,7 +949,7 @@ function renderPlayer(){
   if(v === "lobby"){
     pLayout = v;
     pScreen.innerHTML = `${connBar}<div class="pwrap">${head}<div class="center" style="min-height:auto;flex:1">
-      <div class="brand">حروف</div><p class="muted">دخلت! انتظر الهوست يبدأ الجولة.</p>
+      <div class="brand">حروف</div><p class="muted">دخلت! انتظر بداية الجولة.</p>
       <div class="card" style="text-align:right"><h2>اللاعبين (${s.players.length})</h2><div class="plist">${s.players.map(p =>
         `<div class="pl" style="--c:${p.color}"><span class="dot"></span><span class="nm">${esc(p.name)}${p.id === P.pid ? " (أنت)" : ""}</span></div>`).join("")}</div></div></div></div>`;
     return;
@@ -962,7 +962,7 @@ function renderPlayer(){
         ? `<div class="lbl">${w.some(p => p.id === P.pid) ? "مبروك! فزت بالجولة" : "فاز بالجولة"}</div><div class="nm" style="--c:${w[0].color}">${w.map(p => esc(p.name)).join(" و ")}</div>`
         : `<div class="lbl">انتهت الجولة</div><div class="nm">بدون فائز</div>`}</section>
       <section class="card" style="margin-top:12px"><h2>الترتيب</h2><div class="plist stand">${standings(s.players, false)}</div></section>
-      <p class="muted" style="text-align:center">انتظر الهوست يبدأ الجولة التالية</p></div>`;
+      <p class="muted" style="text-align:center">انتظر بداية الجولة التالية</p></div>`;
     return;
   }
   // in a cup, players who are not in the running match stay on the bracket until they tap «مشاهدة»
@@ -1073,7 +1073,7 @@ function landing(){
   app.innerHTML = `<div class="center"><div class="brand">حروف</div>
     <p class="muted">لعبة جماعية: سؤال، 28 حرف، و15 ثانية لكل لاعب.</p>
     <div class="card">
-      <button class="primary big" data-act="gohost">افتح غرفة (هوست)</button>
+      <button class="primary big" data-act="gohost">افتح غرفة</button>
       <div class="or">أو ادخل غرفة موجودة</div>
       <form id="codeForm" class="row"><input class="inp codein" id="codeIn" maxlength="4" placeholder="ABCD" autocapitalize="characters" autocomplete="off"><button class="ghost">انضم</button></form>
     </div></div>`;
