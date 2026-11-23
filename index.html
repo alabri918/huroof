@@ -105,7 +105,7 @@ body.hot .tbar i{background:var(--red)}
 .q{margin:0;font-size:clamp(2rem,4.5vw,3.6rem);font-weight:800;color:var(--gold);text-align:center;flex:1;line-height:1.25;text-shadow:0 4px 0 rgba(0,0,0,.35)}
 .play .board{--cols:7;--gap:clamp(8px,1.2vw,16px);width:min(100%,calc((100dvh - 300px) * 1.75))}
 .side{display:flex;flex-direction:column;gap:12px;min-width:0}
-.side .plist{flex:1;overflow:auto}
+.side .plist{flex:0 1 auto;overflow:auto}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .controls .wide{grid-column:1/-1}
 
@@ -164,6 +164,13 @@ body.hot .tbar i{background:var(--red)}
 .slot.lost span{text-decoration:line-through}
 .slot.won span{color:var(--gold)}
 .slot.live{animation:glow 1.4s ease-in-out infinite}
+.slot.adv{animation:advance 1.6s ease-out 2}
+@keyframes advance{0%{transform:translate(-50%,-50%) scale(1.5);filter:drop-shadow(0 0 2cqw #ffd862) brightness(1.6)}60%{filter:drop-shadow(0 0 1.2cqw #ffd862) brightness(1.3)}100%{transform:translate(-50%,-50%) scale(1)}}
+.lastpick{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:0}
+.lastpick:empty{visibility:hidden}
+.lastpick .lbl{color:var(--muted);font-size:1rem}
+.lastpick .big{width:min(62%,170px);box-shadow:0 5px 0 var(--edge),0 0 0 5px var(--c),0 10px 30px rgba(0,0,0,.4);animation:pop .55s ease}
+.lastpick .who2{font-size:1.6rem;font-weight:800}
 @keyframes glow{50%{filter:drop-shadow(0 0 .9cqw #ffd862) brightness(1.25)}}
 .slot.champ{color:#3a2300;font-size:1.9cqw}
 .collbl{position:absolute;transform:translate(-50%,-50%);font-size:1.05cqw;color:var(--muted);white-space:nowrap}
@@ -484,7 +491,12 @@ const BR = {W:1672, H:941, champ:{x:836, y:650, w:286, h:56}, cols:[
   {x:328, w:146, h:42, img:"quarterfinal", ys:[229,388,540,696]},
   {x:515, w:136, h:42, img:"semifinal",    ys:[311,617]},
   {x:634, w:160, h:48, img:"finalist",     ys:[459]}]};
-function bracketHTML(cup){
+// the slot a match winner just moved into, so the bracket can animate the step up
+function advOf(res){
+  if(!res || !res.match || res.replay || !res.winners || !res.winners.length) return null;
+  return {r:res.match.r + 1, i:res.match.i >> 1, side:res.match.i % 2 ? "b" : "a"};
+}
+function bracketHTML(cup, adv){
   const R = cup.rounds.length, live = nextMatchOf(cup), mx = (x, left) => left ? x : BR.W - x;
   const px = (v, t) => (v / t * 100).toFixed(3) + "%";
   let slots = "", lines = "", lbls = "";
@@ -495,6 +507,7 @@ function bracketHTML(cup){
       const left = j < half, y = col.ys[left ? j : j - half], id = m[side], n = id && cup.names[id];
       let cls = !id ? "empty" : m.done ? (m.w === id ? "won" : "lost") : cup.out.includes(id) ? "lost" : "";
       if(id && live && live.r === k && live.i === i) cls += " live";
+      if(id && adv && adv.r === k && adv.i === i && adv.side === side) cls += " adv";
       slots += `<div class="slot ${cls}" style="left:${px(mx(col.x, left), BR.W)};top:${px(y, BR.H)};width:${px(col.w, BR.W)};height:${px(col.h, BR.H)};background-image:url(img/${img}.webp)">`
         + `<span>${n ? esc(n.name) : k === 0 && side === "b" ? "تأهل مباشر" : ""}</span></div>`;
     });
@@ -592,7 +605,7 @@ function startRound(){
     if(S.players.length < 2){ toast("لازم لاعبين على الأقل"); return; }
     S.match = null; ids = S.players.map(p => p.id);
   }
-  S.round++; S.phase = "play"; S.letters = {}; S.result = null; S.paused = false;
+  S.round++; S.phase = "play"; S.letters = {}; S.result = null; S.paused = false; S.lastPick = null;
   S.players.forEach(p => p.alive = ids.includes(p.id));
   S.turn = S.match ? ids[Math.random() < .5 ? 0 : 1] : S.players[(S.round - 1) % S.players.length].id;
   deadline = Date.now() + TURN_MS; usedQ.add(S.question);
@@ -604,6 +617,7 @@ function pick(pid, l){
   if(S.phase !== "play" || S.paused || S.turn !== pid || !LETTERS.includes(l) || S.letters[l]) return;
   const p = byId(pid);
   S.letters[l] = {id:p.id, name:p.name, color:p.color}; p.score++;
+  S.lastPick = {l, name:p.name, color:p.color, at:Date.now()}; // shown big on the host screen so everyone sees the pick
   S.last = {txt:`${p.name} أخذ حرف ${l}`}; justLetter = l;
   sfx.pick(); advanceFrom(S.players.indexOf(p));
 }
@@ -673,6 +687,7 @@ async function hostAct(act, el){
         const u = S.letters[l];
         if(await ask(`ترجع حرف ${l}؟ (تنشال نقطته من ${u.name})`, "رجّعه") && S.letters[l]){
           delete S.letters[l]; const o = byId(u.id); if(o) o.score = Math.max(0, o.score - 1);
+          if(S.lastPick && S.lastPick.l === l) S.lastPick = null;
           S.last = {txt:`رجع حرف ${l}`}; changed();
         }
       } else if(S.turn && !S.paused) pick(S.turn, l);
@@ -759,6 +774,7 @@ const LAYOUTS = {
     <aside class="side card">
       <h2>اللاعبين</h2>
       <div class="plist" id="plist"></div>
+      <div class="lastpick" id="lastpick"></div>
       ${ADDFORM}
       <div class="controls">
         <button class="ghost" data-act="pause" id="pauseBtn"></button>
@@ -820,6 +836,8 @@ function renderHost(){
     set("#plist", S.players.filter(p => inMatch(p.id)).map(p => plRow(p, true)).join(""));
     const af = $("#addForm"); if(af) af.style.display = S.match ? "none" : "";
     set("#pauseBtn", S.paused ? "استئناف" : "إيقاف مؤقت");
+    const lp = S.lastPick;
+    set("#lastpick", lp ? `<div class="lbl">آخر حرف</div><div class="big tile used-look" data-at="${lp.at}" style="--c:${lp.color}"><span class="ch">${lp.l}</span></div><div class="who2" style="color:${lp.color}">${esc(lp.name)}</div>` : "");
     set("#endBtn", S.match ? "إعادة المباراة" : "إنهاء الجولة");
   }
   if(view === "end"){
@@ -830,7 +848,7 @@ function renderHost(){
     set("#stand", standings(S.players, true));
   }
   if(view === "bracket"){
-    set("#bracket", bracketHTML(S.cup));
+    set("#bracket", bracketHTML(S.cup, advOf(S.result)));
     const nm = nextMatchOf(S.cup), name = id => S.cup.names[id];
     set("#nextm", nm ? `<span class="pill stage">${nm.label}</span><b style="--c:${name(nm.a).color}">${esc(name(nm.a).name)}</b><span class="vs">ضد</span><b style="--c:${name(nm.b).color}">${esc(name(nm.b).name)}</b>` : "<span>انتهت البطولة</span>");
     $("#startBtn").style.display = nm ? "" : "none";
@@ -995,7 +1013,7 @@ function renderPlayer(){
       <p class="cupinfo" style="font-size:1.05rem;color:#fff">${status}</p>
       ${liveCard}
       ${s.result && s.result.match && v === "bracket" ? `<p class="cupinfo">${esc(cupResultText(s.result, cup))}</p>` : ""}
-      <div class="pbr" data-act="bigbr">${bracketHTML(cup)}</div>
+      <div class="pbr" data-act="bigbr">${bracketHTML(cup, advOf(s.result))}</div>
       <p class="cupinfo" style="margin-top:2px">اضغط على الشجرة لتكبيرها</p>
       <section class="card mlist" style="margin-top:8px">${list}</section></div>`;
     const big = document.getElementById("bigbr"); if(big) big.querySelector(".bigin").innerHTML = bracketHTML(cup);
