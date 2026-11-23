@@ -12,11 +12,7 @@
   --tile1:#fff7e2;--tile2:#efd39b;--edge:#b07b34;--panel:rgba(4,14,58,.55);--line:rgba(160,190,255,.22);--muted:#b4c3f2;--red:#ff6161;--green:#5fe08b}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;min-height:100%}
-/* the backdrop sits on its own fixed layer (iPhones ignore background-attachment:fixed); on a portrait phone it is
-   stretched instead of cropped, so the side glows and gold arcs of the artwork stay on screen */
-body::before{content:"";position:fixed;inset:0;z-index:-1;background:url(img/background.webp) center/cover no-repeat;pointer-events:none}
-@media (orientation:portrait){ body::before{background-size:100% 100%} }
-body{background:#062aa0;color:#fff;font-family:var(--font);font-weight:700;
+body{background:#062aa0 url(img/background.webp) center/cover no-repeat fixed;color:#fff;font-family:var(--font);font-weight:700;
   user-select:none;-webkit-user-select:none;min-height:100dvh}
 button,input{font-family:inherit;font-weight:700}
 button{cursor:pointer;border:0;color:inherit}
@@ -208,50 +204,6 @@ body.hot .tbar i{background:var(--red)}
 .closebr{position:fixed;top:calc(10px + env(safe-area-inset-top));left:10px;z-index:41}
 @media (orientation:portrait){ .bigbr.rot .bracket{width:min(94dvh,calc(94vw * var(--ar)));transform:rotate(90deg)} }
 
-/* ---------- gold UI skin (art from huruf-ui-png) ---------- */
-:root{--goldline:#e0b043;--navyink:#1c1236}
-.primary{background:url(img/gold-button.webp) center/100% 100% no-repeat;color:var(--navyink);border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
-.primary:active{transform:translateY(2px);box-shadow:0 2px 8px rgba(0,0,0,.35)}
-.ghost{background:linear-gradient(180deg,#0d2160,#071339);border:2px solid var(--goldline);border-radius:12px;color:#fff}
-.ghost:active{filter:brightness(1.3);background:linear-gradient(180deg,#0d2160,#071339)}
-.ghost.danger{color:#ffb3b3;border-color:#c9584f}
-.inp{background:url(img/input-field.webp) center/100% 100% no-repeat;border:0;border-radius:12px;padding:.8em 1em;color:#fff}
-.inp::placeholder{color:#97a3c6}
-.inp:focus{filter:brightness(1.3)}
-.card{background:linear-gradient(180deg,rgba(9,22,66,.95),rgba(4,12,40,.95));border:2px solid var(--goldline);border-radius:28px;
-  box-shadow:0 0 26px rgba(255,196,80,.2),inset 0 0 0 1px rgba(255,220,140,.12)}
-.brand{background:linear-gradient(180deg,#fff2b8,#f6c445 45%,#c7860f);-webkit-background-clip:text;background-clip:text;color:transparent;
-  text-shadow:none;filter:drop-shadow(0 4px 0 #6b4306) drop-shadow(0 8px 20px rgba(246,196,69,.3));padding:0 .1em}
-h2{color:#fff;font-size:1.25rem}
-.pill{background:#08143a;border:2px solid var(--goldline)}
-.pl{background:linear-gradient(180deg,#0c1d55,#06112f);border:2px solid var(--goldline);border-radius:16px}
-.acts button{background:#08143a;border:2px solid var(--goldline);color:var(--gold);border-radius:10px}
-.acts .x{color:var(--gold)}
-.seg{background:#06112f;border:2px solid var(--goldline);border-radius:16px}
-.seg button{color:#fff}
-.seg button.on{background:url(img/gold-button.webp) center/100% 100% no-repeat;color:var(--navyink)}
-.mbox{background:linear-gradient(180deg,#0c1d55,#050f33);border:2px solid var(--goldline)}
-.lobby{align-items:stretch;padding-top:min(8vh,70px)}
-.lobby .card{padding:26px 28px}
-.joincard{display:flex;flex-direction:column;align-items:center;justify-content:center}
-.joincard .brand{font-size:4.2rem}
-.joincard .code{color:#fff;font-size:1.25rem}
-.joincard .code b{font-size:3.6rem;letter-spacing:.18em}
-
-/* letter keys */
-.tile{aspect-ratio:150/127;border-radius:16%;background:url(img/letter-key.webp) center/100% 100% no-repeat;box-shadow:0 6px 14px rgba(0,0,0,.35);color:#fff}
-.tile .ch{font-size:56cqh;margin-top:-4%}
-.tile small{color:#ffe7a6}
-.tile.used{opacity:.28;filter:grayscale(.6);transform:none;box-shadow:inset 0 0 0 3px var(--c)}
-.board.live .tile:not(.used):active{transform:scale(.95);box-shadow:none}
-.play .board{--gap:clamp(8px,1vw,14px);width:min(100%,calc((100dvh - 290px) * 2.05))}
-.pwrap .board{width:min(100%,calc((100dvh - 280px) * .98))}
-
-/* timer circle in the gold/navy colours */
-.clock{background:radial-gradient(#10225f,#050d2e);border:4px solid #f2c04a;box-shadow:0 0 0 2px #8a5d10,0 6px 16px rgba(0,0,0,.45);color:#fff}
-.who b{text-shadow:0 2px 0 rgba(0,0,0,.35)}
-.q{color:var(--gold)}
-
 @media (max-width:900px){
   .lobby{grid-template-columns:1fr}
   .play{grid-template-columns:1fr;padding:12px}
@@ -409,17 +361,6 @@ function ask(text, ok = "نعم"){
     const m = document.createElement("div"); m.className = "modal";
     m.innerHTML = `<div class="mbox"><p>${esc(text)}</p><div class="row"><button class="primary" data-r="1">${esc(ok)}</button><button class="ghost" data-r="0">إلغاء</button></div></div>`;
     m.onclick = e => { const b = e.target.closest("[data-r]"); if(b || e.target === m){ m.remove(); res(!!b && b.dataset.r === "1"); } };
-    document.body.append(m);
-  });
-}
-
-// a small menu of choices; resolves with the chosen value, or "" when cancelled
-function choose(text, opts){
-  return new Promise(res => {
-    const m = document.createElement("div"); m.className = "modal";
-    m.innerHTML = `<div class="mbox"><p>${esc(text)}</p><div class="row" style="flex-wrap:wrap;justify-content:center">${opts.map(([v, l, c]) =>
-      `<button class="${c || "ghost"}" data-r="${v}">${esc(l)}</button>`).join("")}<button class="ghost" data-r="">إلغاء</button></div></div>`;
-    m.onclick = e => { const b = e.target.closest("[data-r]"); if(b || e.target === m){ m.remove(); res(b ? b.dataset.r : ""); } };
     document.body.append(m);
   });
 }
@@ -734,15 +675,6 @@ async function hostAct(act, el){
       } else if(S.turn && !S.paused) pick(S.turn, l);
       break;
     }
-    case "pmenu": {
-      if(!p) return;
-      const opts = [];
-      if(S.phase === "play" && inMatch(p.id)) opts.push(p.alive ? ["kick", "إقصاء من الجولة"] : ["revive", "إرجاع للجولة"]);
-      opts.push(["remove", "حذف من اللعبة", "ghost danger"]);
-      const r = await choose(p.name, opts);
-      if(r) hostAct(r, {dataset:{id:p.id}});
-      break;
-    }
     case "kick": if(p && S.phase === "play" && p.alive) knockOut(p, `الهوست أقصى ${p.name} من الجولة`); break;
     case "revive": if(p && S.phase === "play" && !p.alive && inMatch(p.id)){ p.alive = true; S.last = {txt:`${p.name} رجع للجولة`}; changed(); } break;
     case "remove": {
@@ -783,31 +715,35 @@ function hostSubmit(form){
     S.players.push(newPlayer("local-" + rid(8), uniqueName(name), true)); inp.value = ""; changed();
   } else if(form.id === "qForm"){
     const inp = form.querySelector("input"), q = inp.value.trim().slice(0, 40); if(!q) return;
-    S.question = q; inp.value = ""; toast("تم اعتماد السؤال للجولة الجاية"); changed();
+    S.question = q; inp.value = ""; changed();
   }
 }
 
 /* ---------- host rendering ---------- */
-// the question stays hidden until a round starts; the host can only set their own
-const QTOOLS = `<form id="qForm" class="row" style="margin:16px 0 18px"><input class="inp" placeholder="اكتب سؤالك" maxlength="40"><button class="ghost">اعتمد</button></form>`;
-const ADDFORM = `<form id="addForm" class="row"><input class="inp" placeholder="اسم اللاعب" maxlength="16"><button class="ghost">إضافة</button></form>`;
+const QTOOLS = `<h2>سؤال الجولة الجاية</h2><div class="qtext" id="qtext"></div><div class="qtools">
+  <button class="ghost" data-act="randq">سؤال ثاني</button>
+  <form id="qForm" class="row"><input class="inp" placeholder="أو اكتب سؤالك" maxlength="40"><button class="ghost">اعتمد</button></form></div>`;
+const ADDFORM = `<form id="addForm" class="row"><input class="inp" placeholder="أضف لاعب يلعب من هذي الشاشة" maxlength="16"><button class="ghost">إضافة</button></form>`;
 const LAYOUTS = {
   lobby: () => `<div class="lobby">
     <section class="card joincard">
       <div class="brand">حروف</div>
       <div class="qr" id="qr"></div>
-      <div class="code">امسح الرمز للانضمام<b id="code"></b></div>
+      <div class="code">امسح الباركود أو ادخل الرمز<b id="code"></b></div>
+      <div class="link" id="link"></div>
       <div class="net" id="net"></div>
     </section>
     <section class="card">
-      <h2>اللاعبون <span id="pcount"></span></h2>
+      <h2>اللاعبين <span id="pcount"></span></h2>
       <div class="plist" id="plist"></div>
-      <div style="margin-top:12px">${ADDFORM}</div>
+      <div style="margin-top:10px">${ADDFORM}</div>
       <h2>نوع اللعب</h2>
       <div class="seg"><button data-act="mode" data-m="free" id="mFree">لعب حر</button><button data-act="mode" data-m="cup" id="mCup">بطولة</button></div>
       <div class="cupinfo" id="cupinfo"></div>
       ${QTOOLS}
       <button class="primary big" data-act="start" id="startBtn"></button>
+      <p class="rules">كل لاعب عنده 15 ثانية يقول كلمة من السؤال ويضغط على أول حرف فيها. الحرف اللي ينضغط ما يرجع ينستخدم في نفس الجولة. اللي يخلص وقته يطلع من الجولة، وآخر واحد يبقى يفوز.<br>
+      في البطولة كل مباراة بين لاعبين، والفائز يتأهل للدور اللي بعده لين النهائي.<br>كل حرف بنقطة، والفوز ${WIN_BONUS} نقاط.</p>
     </section></div>`,
   play: () => `<div class="play">
     <main class="stage">
@@ -818,7 +754,7 @@ const LAYOUTS = {
       <div class="last" id="last"></div>
     </main>
     <aside class="side card">
-      <h2>اللاعبون</h2>
+      <h2>اللاعبين</h2>
       <div class="plist" id="plist"></div>
       ${ADDFORM}
       <div class="controls">
@@ -916,7 +852,7 @@ function plRow(p, inPlay){
   const acts = (inPlay && !watching ? (p.alive ? `<button data-act="kick" data-id="${p.id}">إقصاء</button>` : `<button data-act="revive" data-id="${p.id}">إرجاع</button>`) : "")
     + `<button class="x" data-act="remove" data-id="${p.id}" title="حذف من اللعبة">حذف</button>`;
   return `<div class="pl${inPlay && !p.alive ? " out" : ""}${S.turn === p.id ? " turn" : ""}${!p.local && !p.connected ? " off" : ""}" style="--c:${p.color}">
-    <span class="dot"></span><span class="nm">${esc(p.name)}</span><span class="tag">${tags}</span>${inPlay ? `<b class="sc">${p.score}</b>` : ""}<span class="acts">${acts}</span></div>`;
+    <span class="dot"></span><span class="nm">${esc(p.name)}</span><span class="tag">${tags}</span><b class="sc">${p.score}</b><span class="acts">${acts}</span></div>`;
 }
 function standings(players, withActs){
   return [...players].sort((a, b) => b.score - a.score || b.wins - a.wins).map((p, i) =>
@@ -925,7 +861,7 @@ function standings(players, withActs){
 }
 function renderNet(){
   const e = $("#net"); if(!e) return;
-  const m = {online:["● متصل", "net ok"], connecting:["جاري الاتصال…", "net"], offline:["ما فيه اتصال بالإنترنت، نحاول مرة ثانية…", "net bad"], nolib:["ما قدرنا نحمّل مكتبة الاتصال، تأكد من الإنترنت وحدّث الصفحة", "net bad"]}[netState];
+  const m = {online:["متصل، اللاعبين يقدرون يدخلون", "net ok"], connecting:["جاري الاتصال…", "net"], offline:["ما فيه اتصال بالإنترنت، نحاول مرة ثانية…", "net bad"], nolib:["ما قدرنا نحمّل مكتبة الاتصال، تأكد من الإنترنت وحدّث الصفحة", "net bad"]}[netState];
   e.textContent = m[0]; e.className = m[1];
 }
 
