@@ -172,6 +172,11 @@ body.hot .tbar i{background:var(--red)}
 .nextm{font-size:1.35rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
 .nextm b{color:var(--c)}
 .nextm .vs{color:var(--muted);font-size:1rem}
+.nextbar{gap:18px;margin-top:4px}
+.nextbar .nextm{font-size:1.7rem}
+.nextbar .primary{font-size:1.3rem}
+.nextm .stage{font-size:1.1rem;color:var(--gold);border-color:rgba(246,196,69,.5)}
+.cuptools{position:fixed;top:14px;left:14px;display:flex;gap:8px;z-index:5}
 .champwrap{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center}
 .champwrap .tro{height:min(46dvh,420px);filter:drop-shadow(0 0 40px rgba(255,200,80,.45));animation:rise .9s ease-out}
 @keyframes rise{from{transform:translateY(30px) scale(.85);opacity:0}}
@@ -771,16 +776,11 @@ const LAYOUTS = {
   bracket: () => `<div class="cupwrap">
     <div id="bracket"></div>
     <div class="last" id="cupmsg" style="margin:0"></div>
-    <div class="cupbar">
+    <div class="cuptools"><button class="ghost danger" data-act="newgame">إلغاء البطولة</button><button class="ghost" data-act="fs">ملء الشاشة</button></div>
+    <div class="cupbar nextbar">
       <div class="nextm" id="nextm"></div>
       <button class="primary" data-act="start" id="startBtn">ابدأ المباراة</button>
       <button class="ghost" data-act="showbracket" id="backChamp">رجوع للبطل</button>
-    </div>
-    <div class="cupbar">
-      <span class="pill">السؤال <b id="qtext"></b></span><button class="ghost" data-act="randq">سؤال ثاني</button>
-      <button class="ghost" data-act="fs">ملء الشاشة</button>
-      <button class="ghost danger" data-act="newgame">إلغاء البطولة</button>
-      <span class="pill">الرمز <b id="code"></b></span><span class="net" id="net" style="margin:0"></span>
     </div></div>`,
   champion: () => `<div class="champwrap">
     <img class="tro" src="img/trophy.webp" alt="">
@@ -813,7 +813,9 @@ function renderHost(){
     setClock(remainingNow(), S.paused);
     $("#board").innerHTML = boardHTML(S.letters, {just:justLetter}); justLetter = null;
     const last = $("#last"); last.textContent = S.last ? S.last.txt : ""; last.className = "last" + (S.last && S.last.out ? " out" : "");
-    set("#plist", S.players.map(p => plRow(p, true)).join(""));
+    // in a cup match only the two players are listed; spectators and the add-player form stay hidden
+    set("#plist", S.players.filter(p => inMatch(p.id)).map(p => plRow(p, true)).join(""));
+    const af = $("#addForm"); if(af) af.style.display = S.match ? "none" : "";
     set("#pauseBtn", S.paused ? "استئناف" : "إيقاف مؤقت");
     set("#endBtn", S.match ? "إعادة المباراة" : "إنهاء الجولة");
   }
@@ -827,7 +829,7 @@ function renderHost(){
   if(view === "bracket"){
     set("#bracket", bracketHTML(S.cup));
     const nm = nextMatchOf(S.cup), name = id => S.cup.names[id];
-    set("#nextm", nm ? `<span class="muted">${nm.label}:</span><b style="--c:${name(nm.a).color}">${esc(name(nm.a).name)}</b><span class="vs">ضد</span><b style="--c:${name(nm.b).color}">${esc(name(nm.b).name)}</b>` : "<span>انتهت البطولة</span>");
+    set("#nextm", nm ? `<span class="pill stage">${nm.label}</span><b style="--c:${name(nm.a).color}">${esc(name(nm.a).name)}</b><span class="vs">ضد</span><b style="--c:${name(nm.b).color}">${esc(name(nm.b).name)}</b>` : "<span>انتهت البطولة</span>");
     $("#startBtn").style.display = nm ? "" : "none";
     $("#backChamp").style.display = S.phase === "champion" ? "" : "none";
     set("#cupmsg", esc(cupResultText(S.result, S.cup)));
