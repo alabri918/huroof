@@ -340,7 +340,7 @@ const QR = (() => {
 })();
 
 const LETTERS = "ا ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي".split(" ");
-const TURN_MS = 15000, WIN_BONUS = 3;
+const TURN_MS = 15000, WIN_BONUS = 3, MATCH_WINS = 2; // cup matches: first to 2 round wins (best of 3)
 const COLORS = ["#ff6b6b","#4dabf7","#ffd43b","#69db7c","#c49bff","#ff922b","#f783ac","#3bc9db","#a9e34b","#e8a0f7","#ffa8a8","#91a7ff","#20c997","#fab005"];
 const PEER_PREFIX = "huroof-q7-";
 const PEER_CFG = {config:{iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:global.stun.twilio.com:3478"}]}};
@@ -480,7 +480,7 @@ function resolveCup(){
 function nextMatchOf(cup){
   if(!cup) return null;
   for(let r = 0; r < cup.rounds.length; r++)
-    for(let i = 0; i < cup.rounds[r].length; i++){ const m = cup.rounds[r][i]; if(!m.done && m.a && m.b) return {r, i, a:m.a, b:m.b, label:stageName(cup.size >> r)}; }
+    for(let i = 0; i < cup.rounds[r].length; i++){ const m = cup.rounds[r][i]; if(!m.done && m.a && m.b) return {r, i, a:m.a, b:m.b, label:stageName(cup.size >> r), sc:m.sc ? [...m.sc] : [0, 0]}; }
   return null;
 }
 const cupOver = cup => !!cup && cup.rounds[cup.rounds.length - 1][0].done;
@@ -493,7 +493,7 @@ const BR = {W:1672, H:941, champ:{x:836, y:650, w:286, h:56}, cols:[
   {x:634, w:160, h:48, img:"finalist",     ys:[459]}]};
 // the slot a match winner just moved into, so the bracket can animate the step up
 function advOf(res){
-  if(!res || !res.match || res.replay || !res.winners || !res.winners.length) return null;
+  if(!res || !res.match || res.replay || !res.decided || !res.winners || !res.winners.length) return null;
   return {r:res.match.r + 1, i:res.match.i >> 1, side:res.match.i % 2 ? "b" : "a"};
 }
 function bracketHTML(cup, adv){
@@ -538,6 +538,7 @@ function hostStart(){
   let saved = null; try{ saved = JSON.parse(localStorage.getItem("huroof_host") || "null"); }catch(e){}
   if(saved && saved.S && Date.now() - saved.at < 12 * 3600e3){
     S = {...freshState(), ...saved.S}; code = saved.code;
+    if(S.match && !S.match.sc) S.match.sc = [0, 0]; // saved before matches were best of 3
     S.players.forEach(p => { if(!p.local) p.connected = false; });
     if(S.phase === "play"){ S.remaining = Math.max(1000, S.remaining || TURN_MS); S.paused = true; }
   } else { S = freshState(); code = newCode(); }
@@ -646,8 +647,12 @@ function endRound(winners, reason){
       if(cnt(x.id) !== cnt(y.id)) w = cnt(x.id) > cnt(y.id) ? x : y;
     }
     const m = S.cup.rounds[S.match.r][S.match.i];
-    if(w){ w.score += WIN_BONUS; w.wins++; m.w = w.id; m.done = true; resolveCup(); sfx.win(); }
-    S.result = {winners:w ? [w.id] : [], reason, round:S.round, match:S.match, replay:!w};
+    // a match is best of 3 rounds: the first to win 2 rounds goes through
+    if(w){
+      m.sc = m.sc || [0, 0]; const k = w.id === m.a ? 0 : 1; m.sc[k]++;
+      if(m.sc[k] >= MATCH_WINS){ w.score += WIN_BONUS; w.wins++; m.w = w.id; m.done = true; resolveCup(); sfx.win(); }
+    }
+    S.result = {winners:w ? [w.id] : [], reason, round:S.round, match:{...S.match, sc:m.sc ? [...m.sc] : [0, 0]}, replay:!w, decided:m.done};
     S.match = null; S.phase = cupOver(S.cup) ? "champion" : "bracket"; viewBracket = false;
     S.question = randomQ(); S.players.forEach(p => p.alive = true);
     return changed();
@@ -716,7 +721,7 @@ async function hostAct(act, el){
       else { S.remaining = remainingNow(); S.paused = true; }
       changed(); break;
     case "endround":
-      if(await ask(S.match ? "تنهي المباراة بدون فائز؟ (تنعاد بسؤال جديد)" : "تنهي الجولة بدون فائز؟", "أنهِ") && S.phase === "play") endRound([], "host");
+      if(await ask(S.match ? "تعيد الجولة بدون فائز؟ (تنعاد بسؤال جديد)" : "تنهي الجولة بدون فائز؟", "أنهِ") && S.phase === "play") endRound([], "host");
       break;
     case "newgame":
       if(!await ask(S.mode === "cup" && S.phase !== "lobby" ? "تلغي البطولة وترجع للبداية؟ النقاط كلها تتصفّر." : "تبدأ لعبة جديدة؟ النقاط كلها تتصفّر.", "نعم")) return;
@@ -761,7 +766,7 @@ const LAYOUTS = {
       ${QTOOLS}
       <button class="primary big" data-act="start" id="startBtn"></button>
       <p class="rules">كل لاعب عنده 15 ثانية يقول كلمة من السؤال ويضغط على أول حرف فيها. الحرف اللي ينضغط ما يرجع ينستخدم في نفس الجولة. اللي يخلص وقته يطلع من الجولة، وآخر واحد يبقى يفوز.<br>
-      في البطولة كل مباراة بين لاعبين، والفائز يتأهل للدور اللي بعده لين النهائي.<br>كل حرف بنقطة، والفوز ${WIN_BONUS} نقاط.</p>
+      في البطولة كل مباراة بين لاعبين من 3 جولات، واللي يفوز بجولتين يتأهل للدور اللي بعده لين النهائي.<br>كل حرف بنقطة، والفوز ${WIN_BONUS} نقاط.</p>
     </section></div>`,
   play: () => `<div class="play">
     <main class="stage">
@@ -826,7 +831,7 @@ function renderHost(){
   }
   if(view === "play"){
     const t = byId(S.turn);
-    set("#rnd", S.match ? S.match.label : `الجولة ${S.round}`); set("#q", esc(S.question));
+    set("#rnd", S.match ? `${S.match.label} · الجولة ${S.match.sc[0] + S.match.sc[1] + 1} · ${S.match.sc[0]}-${S.match.sc[1]}` : `الجولة ${S.round}`); set("#q", esc(S.question));
     set("#turnbox", S.paused ? `<span class="paused">اللعبة متوقفة</span><div class="clock"><span id="tnum"></span></div>`
       : t ? `<div class="who" style="--c:${t.color}"><span class="dot"></span>الدور على <b>${esc(t.name)}</b></div><div class="clock"><span id="tnum"></span></div>` : "");
     setClock(remainingNow(), S.paused);
@@ -838,7 +843,7 @@ function renderHost(){
     set("#pauseBtn", S.paused ? "استئناف" : "إيقاف مؤقت");
     const lp = S.lastPick;
     set("#lastpick", lp ? `<div class="lbl">آخر حرف</div><div class="big tile used-look" data-at="${lp.at}" style="--c:${lp.color}"><span class="ch">${lp.l}</span></div><div class="who2" style="color:${lp.color}">${esc(lp.name)}</div>` : "");
-    set("#endBtn", S.match ? "إعادة المباراة" : "إنهاء الجولة");
+    set("#endBtn", S.match ? "إعادة الجولة" : "إنهاء الجولة");
   }
   if(view === "end"){
     const w = S.result.winners.map(byId).filter(Boolean);
@@ -850,8 +855,9 @@ function renderHost(){
   if(view === "bracket"){
     set("#bracket", bracketHTML(S.cup, advOf(S.result)));
     const nm = nextMatchOf(S.cup), name = id => S.cup.names[id];
-    set("#nextm", nm ? `<span class="pill stage">${nm.label}</span><b style="--c:${name(nm.a).color}">${esc(name(nm.a).name)}</b><span class="vs">ضد</span><b style="--c:${name(nm.b).color}">${esc(name(nm.b).name)}</b>` : "<span>انتهت البطولة</span>");
+    set("#nextm", nm ? `<span class="pill stage">${nm.label}</span><b style="--c:${name(nm.a).color}">${esc(name(nm.a).name)}</b><span class="vs">${nm.sc[0] + nm.sc[1] ? `<span class="pill">${nm.sc[0]} - ${nm.sc[1]}</span>` : "ضد"}</span><b style="--c:${name(nm.b).color}">${esc(name(nm.b).name)}</b>` : "<span>انتهت البطولة</span>");
     $("#startBtn").style.display = nm ? "" : "none";
+    if(nm) $("#startBtn").textContent = nm.sc[0] + nm.sc[1] ? `ابدأ الجولة ${nm.sc[0] + nm.sc[1] + 1}` : "ابدأ المباراة";
     $("#backChamp").style.display = S.phase === "champion" ? "" : "none";
     set("#cupmsg", esc(cupResultText(S.result, S.cup)));
   }
@@ -863,8 +869,9 @@ function renderHost(){
 }
 function cupResultText(res, cup){
   if(!res || !res.match) return "";
-  if(res.replay) return `${res.match.label}: ما فيه فائز، المباراة تنعاد بسؤال جديد`;
+  if(res.replay) return `${res.match.label}: ما فيه فائز، الجولة تنعاد بسؤال جديد`;
   const w = cup.names[res.winners[0]];
+  if(w && !res.decided){ const A = cup.names[res.match.a], B = cup.names[res.match.b]; return `${w.name} فاز بالجولة. النتيجة: ${A.name} ${res.match.sc[0]} - ${res.match.sc[1]} ${B.name}`; }
   return !w ? "" : res.match.label === "النهائي" ? `${w.name} فاز بالنهائي وصار بطل البطولة` : `${w.name} فاز في ${res.match.label} وتأهل`;
 }
 function plRow(p, inPlay){
@@ -1028,7 +1035,7 @@ function renderPlayer(){
   $("#connbar").innerHTML = connBar; $("#phead").innerHTML = head; $("#pq").textContent = s.question;
   const t = s.players.find(p => p.id === s.turn), mine = s.turn === P.pid && !s.paused;
   const nmOf = id => (s.players.find(p => p.id === id) || {}).name || "";
-  const ban = spectator ? `<div class="banner watch row" style="justify-content:space-between"><span>${esc(s.match.label)}: ${esc(nmOf(s.match.a))} ضد ${esc(nmOf(s.match.b))}</span><button class="ghost" data-act="unwatch">خروج</button></div>`
+  const ban = spectator ? `<div class="banner watch row" style="justify-content:space-between"><span>${esc(s.match.label)}: ${esc(nmOf(s.match.a))} ${s.match.sc ? `${s.match.sc[0]} - ${s.match.sc[1]}` : "ضد"} ${esc(nmOf(s.match.b))}</span><button class="ghost" data-act="unwatch">خروج</button></div>`
     : me.alive ? "" : `<div class="banner">طلعت من هذي الجولة، تابع اللعب لين الجولة الجاية</div>`;
   if($("#pban").innerHTML !== ban) $("#pban").innerHTML = ban;
   const pt = $("#pturn"); pt.className = "pturn" + (mine ? " mine" : "");
